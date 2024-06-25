@@ -8,6 +8,7 @@ interface ChampionTableRow {
   name: string;
   winrate: number;
   mastery: number;
+  mastery_win: number;
   won: boolean;
   played: boolean;
 }
@@ -15,6 +16,8 @@ interface ChampionTableRow {
 function App() {
   const temp: ChampionTableRow[] = [];
   const [champs, setChamps] = useState(temp);
+  const [sort_dir, setSortDir] = useState(-1);
+  const [sort_col, setSortCol] = useState("mastery_win");
 
   async function champion(): Promise<ChampionTableRow[]> {
     return invoke("get_all_data");
@@ -31,17 +34,40 @@ function App() {
   });
   const numberFormatter = Intl.NumberFormat();
 
+  const sort = (attr: keyof ChampionTableRow) => () => {
+    let sort_dir_temp = sort_dir;
+    if (attr === sort_col) {
+      sort_dir_temp = -sort_dir_temp;
+    } else {
+      sort_dir_temp = -1;
+      setSortCol(attr);
+    }
+    setChamps(
+      champs.slice(0).sort((a, b) => {
+        let cmp;
+        if (typeof a[attr] === "string") {
+          cmp = a[attr] > b[attr];
+        } else {
+          cmp = a[attr] < b[attr];
+        }
+        return cmp ? -sort_dir_temp : sort_dir_temp;
+      })
+    );
+    setSortDir(sort_dir_temp);
+  };
+
   return (
     <div class="container">
       <table class="striped">
         <thead>
           <tr>
             <th>Icon</th>
-            <th>Champion</th>
-            <th>Winrate</th>
-            <th>Mastery</th>
-            <th>Won</th>
-            <th>Played</th>
+            <th onClick={sort("name")}>Champion</th>
+            <th onClick={sort("winrate")}>Winrate</th>
+            <th onClick={sort("mastery")}>Mastery</th>
+            <th onClick={sort("mastery_win")}>Metric</th>
+            <th onClick={sort("won")}>Won</th>
+            <th onClick={sort("played")}>Played</th>
           </tr>
         </thead>
         <tbody>
@@ -56,6 +82,9 @@ function App() {
                   {numberPercentageFormatter.format(champ.winrate / 100)}
                 </td>
                 <td class="number">{numberFormatter.format(champ.mastery)}</td>
+                <td class="number">
+                  {numberFormatter.format(champ.mastery_win)}
+                </td>
                 <td class="center">
                   <input type="checkbox" checked={champ.won} disabled />
                 </td>

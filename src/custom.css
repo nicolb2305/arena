@@ -1,3 +1,7 @@
+th {
+    user-select: none;
+}
+
 td.number {
     text-align: right;
 }

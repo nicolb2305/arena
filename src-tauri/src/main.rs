@@ -9,6 +9,7 @@ use client_api::{
     ddragon::endpoints::{champion, versions},
 };
 use serde::{Deserialize, Serialize};
+use tap::Tap;
 use tauri::State;
 
 const CHAMPION_OCEAN: &str = "602001";
@@ -26,6 +27,7 @@ struct ChampionTableRow {
     name: String,
     winrate: f32,
     mastery: i32,
+    mastery_win: f32,
     won: bool,
     played: bool,
 }
@@ -67,15 +69,19 @@ async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>
 
     Ok(champions
         .into_iter()
-        .flat_map(|(_, champ)| {
+        .filter_map(|(_, champ)| {
+            let winrate = *winrates.get(&champ.name)?;
+            let mastery = *mastery.get(&champ.key.parse::<i32>().unwrap())?;
             Some(ChampionTableRow {
                 img: format!(
                     "https://cdn.communitydragon.org/latest/champion/{}/square",
                     champ.key
                 ),
-                winrate: *winrates.get(&champ.name)?,
+                winrate,
                 name: champ.name,
-                mastery: *mastery.get(&champ.key.parse::<i32>().unwrap())?,
+                mastery,
+                #[allow(clippy::cast_precision_loss)]
+                mastery_win: winrate * mastery.checked_ilog2().unwrap_or(0) as f32,
                 won: challenges
                     .get(ADAPT_TO_ALL_SITUATIONS)?
                     .completed_ids
@@ -86,7 +92,8 @@ async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>
                     .contains(&champ.key.parse::<i32>().unwrap()),
             })
         })
-        .collect())
+        .collect::<Vec<_>>()
+        .tap_mut(|x| x.sort_by(|a, b| b.mastery_win.partial_cmp(&a.mastery_win).unwrap())))
 }
 
 fn main() -> anyhow::Result<()> {
