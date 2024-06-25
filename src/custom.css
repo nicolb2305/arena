@@ -1,0 +1,11 @@
+td.number {
+    text-align: right;
+}
+
+td.center {
+    text-align: center;
+}
+
+tr:hover td {
+    background-color: #2a3242!important;
+}
