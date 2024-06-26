@@ -23,6 +23,7 @@ struct ChampionWinrate {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ChampionTableRow {
+    id: i32,
     img: String,
     name: String,
     winrate: f32,
@@ -30,6 +31,20 @@ struct ChampionTableRow {
     mastery_win: f32,
     won: bool,
     played: bool,
+}
+
+#[tauri::command]
+async fn randomize_teams(client: State<'_, Client>) -> Result<(), String> {
+    client_api::actions::randomize_teams(&client)
+        .await
+        .map_err(|x| x.to_string())
+}
+
+#[tauri::command]
+async fn select_champion(client: State<'_, Client>, champion_id: i32) -> Result<(), String> {
+    client_api::actions::select_champion(&client, champion_id)
+        .await
+        .map_err(|x| x.to_string())
 }
 
 #[tauri::command]
@@ -71,8 +86,10 @@ async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>
         .into_iter()
         .filter_map(|(_, champ)| {
             let winrate = *winrates.get(&champ.name)?;
-            let mastery = *mastery.get(&champ.key.parse::<i32>().unwrap())?;
+            let key = champ.key.parse::<i32>().unwrap();
+            let mastery = *mastery.get(&key)?;
             Some(ChampionTableRow {
+                id: key,
                 img: format!(
                     "https://cdn.communitydragon.org/latest/champion/{}/square",
                     champ.key
@@ -85,11 +102,8 @@ async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>
                 won: challenges
                     .get(ADAPT_TO_ALL_SITUATIONS)?
                     .completed_ids
-                    .contains(&champ.key.parse::<i32>().unwrap()),
-                played: challenges
-                    .get(CHAMPION_OCEAN)?
-                    .completed_ids
-                    .contains(&champ.key.parse::<i32>().unwrap()),
+                    .contains(&key),
+                played: challenges.get(CHAMPION_OCEAN)?.completed_ids.contains(&key),
             })
         })
         .collect::<Vec<_>>()
@@ -100,7 +114,11 @@ fn main() -> anyhow::Result<()> {
     let client = Client::new()?;
     tauri::Builder::default()
         .manage(client)
-        .invoke_handler(tauri::generate_handler![get_all_data])
+        .invoke_handler(tauri::generate_handler![
+            get_all_data,
+            select_champion,
+            randomize_teams
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
     Ok(())

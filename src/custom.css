@@ -1,5 +1,25 @@
+.container {
+    margin: 25px;
+}
+
+body {
+    overflow-y: scroll;
+}
+
 th {
     user-select: none;
+}
+
+th#winrate, th#mastery, th#metric {
+    min-width: 110px;
+}
+
+th#img, th#won, th#played {
+    min-width: 50px;
+}
+
+th#name {
+    min-width: 150px;
 }
 
 td.number {
@@ -12,4 +32,10 @@ td.center {
 
 tr:hover td {
     background-color: #2a3242!important;
+}
+
+.columns {
+    display: grid;
+    column-gap: 50px;
+    row-gap: 25px;
 }
