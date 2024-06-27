@@ -9,7 +9,6 @@ use client_api::{
     ddragon::endpoints::{champion, versions},
 };
 use serde::{Deserialize, Serialize};
-use tap::Tap;
 use tauri::State;
 
 const CHAMPION_OCEAN: &str = "602001";
@@ -28,7 +27,6 @@ struct ChampionTableRow {
     name: String,
     winrate: f32,
     mastery: i32,
-    mastery_win: f32,
     won: bool,
     played: bool,
 }
@@ -99,7 +97,6 @@ async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>
                 name: champ.name,
                 mastery,
                 #[allow(clippy::cast_precision_loss)]
-                mastery_win: winrate * mastery.checked_ilog2().unwrap_or(0) as f32,
                 won: challenges
                     .get(ADAPT_TO_ALL_SITUATIONS)?
                     .completed_ids
@@ -107,8 +104,7 @@ async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>
                 played: challenges.get(CHAMPION_OCEAN)?.completed_ids.contains(&key),
             })
         })
-        .collect::<Vec<_>>()
-        .tap_mut(|x| x.sort_by(|a, b| b.mastery_win.partial_cmp(&a.mastery_win).unwrap())))
+        .collect::<Vec<_>>())
 }
 
 fn main() -> anyhow::Result<()> {

@@ -9,7 +9,6 @@ interface ChampionTableRow {
   name: string;
   winrate: number;
   mastery: number;
-  mastery_win: number;
   won: boolean;
   played: boolean;
 }
@@ -35,7 +34,7 @@ function DisplaySelector(props: {
   callback: (target: Display) => void;
 }) {
   return (
-    <div style={`grid-column-start: ${props.column}; grid-row-start: 2;`}>
+    <div style={`grid-column-start: ${props.column}; grid-row-start: 3;`}>
       <p>{props.text}</p>
       <select
         onChange={(event) => {
@@ -50,10 +49,6 @@ function DisplaySelector(props: {
   );
 }
 
-async function champion(): Promise<ChampionTableRow[]> {
-  return invoke("get_all_data");
-}
-
 async function randomizeTeams() {
   invoke("randomize_teams");
 }
@@ -62,28 +57,42 @@ function App() {
   const temp: ChampionTableRow[] = [];
   const [champs, setChamps] = useState(temp);
   const [sortDir, setSortDir] = useState(-1);
-  const [sortCol, setSortCol] = useState("mastery_win");
+  const [sortCol, setSortCol] = useState("masteryWin");
   const [displayPlayed, setPlayed] = useState(Display.Both);
   const [displayWon, setWon] = useState(Display.Both);
   const [search, setSearch] = useState("");
   const [lastPicked, setLastPicked] = useState(-1);
+  const [winrateWeight, setWinrateWeight] = useState(25);
 
   async function selectChampion(championId: number) {
     setLastPicked(championId);
     invoke("select_champion", { championId: championId });
   }
 
+  async function champion(): Promise<ChampionTableRow[]> {
+    const champs: ChampionTableRow[] = await invoke("get_all_data");
+    champs.sort((a, b) => masteryWin(b) - masteryWin(a));
+    return champs;
+  }
+
+  // Only fetch champions on first render
   useEffect(() => {
     champion().then((champs) => setChamps(champs));
   }, []);
 
+  // If winrateWeight is changed, re-sort by metric if already sorted by metric
+  useEffect(() => {
+    if (sortCol === "masteryWin") {
+      champSortMetric(false)();
+    }
+  }, [winrateWeight]);
+
   const champSort = (attr: keyof ChampionTableRow) => () => {
-    let sort_dir_temp = sortDir;
+    let sortDirTemp = sortDir;
     if (attr === sortCol) {
-      sort_dir_temp = -sort_dir_temp;
+      sortDirTemp = -sortDirTemp;
     } else {
-      sort_dir_temp = -1;
-      setSortCol(attr);
+      sortDirTemp = -1;
     }
     setChamps(
       champs.slice(0).sort((a, b) => {
@@ -93,10 +102,30 @@ function App() {
         } else {
           cmp = a[attr] < b[attr];
         }
-        return cmp ? -sort_dir_temp : sort_dir_temp;
+        return cmp ? -sortDirTemp : sortDirTemp;
       })
     );
-    setSortDir(sort_dir_temp);
+    setSortDir(sortDirTemp);
+    setSortCol(attr);
+  };
+
+  const champSortMetric = (reverse: boolean) => () => {
+    const attr = "masteryWin";
+    let sortDirTemp = sortDir;
+    if (attr === sortCol && reverse) {
+      sortDirTemp = -sortDirTemp;
+    } else if (attr !== sortCol) {
+      sortDirTemp = -1;
+    }
+    setChamps(
+      champs
+        .slice(0)
+        .sort((a, b) =>
+          masteryWin(a) < masteryWin(b) ? -sortDirTemp : sortDirTemp
+        )
+    );
+    setSortDir(sortDirTemp);
+    setSortCol(attr);
   };
 
   const champFilter = (champ: ChampionTableRow) => {
@@ -111,6 +140,9 @@ function App() {
         .some((search_part) => champ.name.toLowerCase().includes(search_part));
     }
   };
+
+  const masteryWin = (champ: ChampionTableRow) =>
+    (champ.winrate - winrateWeight) * Math.log2(champ.mastery);
 
   const championRowCreator = (champ: ChampionTableRow) => {
     return (
@@ -128,7 +160,7 @@ function App() {
           {numberPercentageFormatter.format(champ.winrate / 100)}
         </td>
         <td class="number">{integerFormatter.format(champ.mastery)}</td>
-        <td class="number">{integerFormatter.format(champ.mastery_win)}</td>
+        <td class="number">{integerFormatter.format(masteryWin(champ))}</td>
         <td class="center">
           <input type="checkbox" checked={champ.won} disabled />
         </td>
@@ -176,11 +208,26 @@ function App() {
         >
           Randomize teams
         </button>
+        <div style="grid-column-start: 1; grid-column-end: 3; grid-row-start: 2;">
+          <p>Winrate weighting</p>
+          <input
+            type="range"
+            min="0"
+            max="60"
+            defaultValue="25"
+            step="5"
+            onChange={(event) =>
+              setWinrateWeight(
+                parseInt((event.target! as HTMLInputElement).value)
+              )
+            }
+          />
+        </div>
         <DisplaySelector column={1} text="Show played" callback={setPlayed} />
         <DisplaySelector column={2} text="Show won" callback={setWon} />
         <input
           type="text"
-          style="grid-column-start: 1; grid-column-end: 3; grid-row-start: 3"
+          style="grid-column-start: 1; grid-column-end: 3; grid-row-start: 4"
           placeholder="Search"
           onInput={(event) =>
             setSearch((event.target! as HTMLTextAreaElement).value)
@@ -188,13 +235,13 @@ function App() {
         ></input>
         <button
           onClick={selectRandomChampion}
-          style="grid-column-start: 1; grid-row-start: 4;"
+          style="grid-column-start: 1; grid-row-start: 5;"
         >
           Pick random
         </button>
         <button
           onClick={champion}
-          style="grid-column-start: 2; grid-row-start: 4;"
+          style="grid-column-start: 2; grid-row-start: 5;"
         >
           Refresh
         </button>
@@ -212,7 +259,7 @@ function App() {
             <th id="mastery" onClick={champSort("mastery")}>
               Mastery
             </th>
-            <th id="metric" onClick={champSort("mastery_win")}>
+            <th id="metric" onClick={champSortMetric(true)}>
               Metric
             </th>
             <th id="won" onClick={champSort("won")}>
