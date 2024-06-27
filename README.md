@@ -13,3 +13,5 @@ and "Adapt to All Situations" challenges for arena in League of Legends.
 - Ability to click any champion to automatically pick them in champion select
 - A button to pick a random champion among the ones currently filtered for
 - Team randomizer to create random teams before queueing up for a game
+
+[demo.webm](https://github.com/nicolb2305/arena/assets/21309009/20a1114e-c292-4b9a-95a9-d1b906394f57)
