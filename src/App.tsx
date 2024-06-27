@@ -50,6 +50,14 @@ function DisplaySelector(props: {
   );
 }
 
+async function champion(): Promise<ChampionTableRow[]> {
+  return invoke("get_all_data");
+}
+
+async function randomizeTeams() {
+  invoke("randomize_teams");
+}
+
 function App() {
   const temp: ChampionTableRow[] = [];
   const [champs, setChamps] = useState(temp);
@@ -60,27 +68,16 @@ function App() {
   const [search, setSearch] = useState("");
   const [lastPicked, setLastPicked] = useState(-1);
 
-  async function champion(): Promise<ChampionTableRow[]> {
-    return invoke("get_all_data");
-  }
-
   async function selectChampion(championId: number) {
     setLastPicked(championId);
     invoke("select_champion", { championId: championId });
   }
 
-  async function randomizeTeams() {
-    invoke("randomize_teams");
-  }
+  useEffect(() => {
+    champion().then((champs) => setChamps(champs));
+  }, []);
 
-  function updateChampions() {
-    useEffect(() => {
-      champion().then((champs) => setChamps(champs));
-    }, []);
-  }
-  updateChampions();
-
-  const sort = (attr: keyof ChampionTableRow) => () => {
+  const champSort = (attr: keyof ChampionTableRow) => () => {
     let sort_dir_temp = sortDir;
     if (attr === sortCol) {
       sort_dir_temp = -sort_dir_temp;
@@ -206,22 +203,22 @@ function App() {
         <thead>
           <tr>
             <th id="img">Icon</th>
-            <th id="name" onClick={sort("name")}>
+            <th id="name" onClick={champSort("name")}>
               Champion
             </th>
-            <th id="winrate" onClick={sort("winrate")}>
+            <th id="winrate" onClick={champSort("winrate")}>
               Winrate
             </th>
-            <th id="mastery" onClick={sort("mastery")}>
+            <th id="mastery" onClick={champSort("mastery")}>
               Mastery
             </th>
-            <th id="metric" onClick={sort("mastery_win")}>
+            <th id="metric" onClick={champSort("mastery_win")}>
               Metric
             </th>
-            <th id="won" onClick={sort("won")}>
+            <th id="won" onClick={champSort("won")}>
               Won
             </th>
-            <th id="played" onClick={sort("played")}>
+            <th id="played" onClick={champSort("played")}>
               Played
             </th>
           </tr>
