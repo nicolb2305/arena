@@ -39,14 +39,7 @@ function DisplaySelector(props: {
       <p>{props.text}</p>
       <select
         onChange={(event) => {
-          // if (event.target)
-          //   props.callback(
-          //     Display[
-          //       (event.target as HTMLSelectElement)
-          //         .value as keyof typeof Display
-          //     ]
-          //   );
-          props.callback(event.target.value);
+          props.callback((event.target! as HTMLSelectElement).value as Display);
         }}
       >
         <option value="both">Both</option>
@@ -192,7 +185,9 @@ function App() {
           type="text"
           style="grid-column-start: 1; grid-column-end: 3; grid-row-start: 3"
           placeholder="Search"
-          onInput={(event) => setSearch(event.target.value)}
+          onInput={(event) =>
+            setSearch((event.target! as HTMLTextAreaElement).value)
+          }
         ></input>
         <button
           onClick={selectRandomChampion}
