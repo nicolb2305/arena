@@ -25,7 +25,37 @@ const numberPercentageFormatter = Intl.NumberFormat(undefined, {
   maximumFractionDigits: 2,
   minimumFractionDigits: 2,
 });
-const numberFormatter = Intl.NumberFormat();
+const integerFormatter = Intl.NumberFormat(undefined, {
+  maximumFractionDigits: 0,
+});
+
+function DisplaySelector(props: {
+  column: number;
+  text: string;
+  callback: (target: Display) => void;
+}) {
+  return (
+    <div style={`grid-column-start: ${props.column}; grid-row-start: 2;`}>
+      <p>{props.text}</p>
+      <select
+        onChange={(event) => {
+          // if (event.target)
+          //   props.callback(
+          //     Display[
+          //       (event.target as HTMLSelectElement)
+          //         .value as keyof typeof Display
+          //     ]
+          //   );
+          props.callback(event.target.value);
+        }}
+      >
+        <option value="both">Both</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </div>
+  );
+}
 
 function App() {
   const temp: ChampionTableRow[] = [];
@@ -35,12 +65,14 @@ function App() {
   const [displayPlayed, setPlayed] = useState(Display.Both);
   const [displayWon, setWon] = useState(Display.Both);
   const [search, setSearch] = useState("");
+  const [lastPicked, setLastPicked] = useState(-1);
 
   async function champion(): Promise<ChampionTableRow[]> {
     return invoke("get_all_data");
   }
 
   async function selectChampion(championId: number) {
+    setLastPicked(championId);
     invoke("select_champion", { championId: championId });
   }
 
@@ -48,9 +80,12 @@ function App() {
     invoke("randomize_teams");
   }
 
-  useEffect(() => {
-    champion().then((champs) => setChamps(champs));
-  }, []);
+  function updateChampions() {
+    useEffect(() => {
+      champion().then((champs) => setChamps(champs));
+    }, []);
+  }
+  updateChampions();
 
   const sort = (attr: keyof ChampionTableRow) => () => {
     let sort_dir_temp = sortDir;
@@ -72,6 +107,58 @@ function App() {
       })
     );
     setSortDir(sort_dir_temp);
+  };
+
+  const champFilter = (champ: ChampionTableRow) => {
+    if (search === "") {
+      return (
+        display(displayPlayed, "played")(champ) &&
+        display(displayWon, "won")(champ)
+      );
+    } else {
+      return search
+        .split("|")
+        .some((search_part) => champ.name.toLowerCase().includes(search_part));
+    }
+  };
+
+  const championRowCreator = (champ: ChampionTableRow) => {
+    return (
+      <tr
+        onClick={(event) => {
+          selectChampion(Number(event.currentTarget.dataset.championid));
+        }}
+        data-championid={champ.id}
+      >
+        <td>
+          <img src={champ.img} width="50" />
+        </td>
+        <td>{champ.name}</td>
+        <td class="number">
+          {numberPercentageFormatter.format(champ.winrate / 100)}
+        </td>
+        <td class="number">{integerFormatter.format(champ.mastery)}</td>
+        <td class="number">{integerFormatter.format(champ.mastery_win)}</td>
+        <td class="center">
+          <input type="checkbox" checked={champ.won} disabled />
+        </td>
+        <td class="center">
+          <input type="checkbox" checked={champ.played} disabled />
+        </td>
+      </tr>
+    );
+  };
+
+  const selectRandomChampion = () => {
+    const availableChamps = champs
+      .filter(champFilter)
+      .filter((champ) => champ.id != lastPicked);
+    if (availableChamps.length === 0) {
+      return;
+    }
+    selectChampion(
+      availableChamps[Math.floor(Math.random() * availableChamps.length)].id
+    );
   };
 
   const display =
@@ -99,31 +186,26 @@ function App() {
         >
           Randomize teams
         </button>
-        <div style="grid-column-start: 1; grid-row-start: 2;">
-          <p>Show played</p>
-          <select onChange={(event) => setPlayed(event.target.value)}>
-            <option value="both">Both</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </div>
-        <div style="grid-column-start: 2; grid-row-start: 2;">
-          <p>Show won</p>
-          <select
-            style="grid-column-start: 2"
-            onChange={(event) => setWon(event.target.value)}
-          >
-            <option value="both">Both</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </div>
+        <DisplaySelector column={1} text="Show played" callback={setPlayed} />
+        <DisplaySelector column={2} text="Show won" callback={setWon} />
         <input
           type="text"
           style="grid-column-start: 1; grid-column-end: 3; grid-row-start: 3"
           placeholder="Search"
           onInput={(event) => setSearch(event.target.value)}
         ></input>
+        <button
+          onClick={selectRandomChampion}
+          style="grid-column-start: 1; grid-row-start: 4;"
+        >
+          Pick random
+        </button>
+        <button
+          onClick={champion}
+          style="grid-column-start: 2; grid-row-start: 4;"
+        >
+          Refresh
+        </button>
       </div>
       <table class="striped">
         <thead>
@@ -149,55 +231,7 @@ function App() {
             </th>
           </tr>
         </thead>
-        <tbody>
-          {champs
-            .filter((champ) => {
-              if (search === "") {
-                return (
-                  display(displayPlayed, "played")(champ) &&
-                  display(displayWon, "won")(champ)
-                );
-              } else {
-                return search
-                  .split("|")
-                  .some((search_part) =>
-                    champ.name.toLowerCase().includes(search_part)
-                  );
-              }
-            })
-            .map((champ) => {
-              return (
-                <tr
-                  onClick={(event) => {
-                    selectChampion(
-                      Number(event.currentTarget.dataset.championid)
-                    );
-                  }}
-                  data-championid={champ.id}
-                >
-                  <td>
-                    <img src={champ.img} width="50" />
-                  </td>
-                  <td>{champ.name}</td>
-                  <td class="number">
-                    {numberPercentageFormatter.format(champ.winrate / 100)}
-                  </td>
-                  <td class="number">
-                    {numberFormatter.format(champ.mastery)}
-                  </td>
-                  <td class="number">
-                    {numberFormatter.format(champ.mastery_win)}
-                  </td>
-                  <td class="center">
-                    <input type="checkbox" checked={champ.won} disabled />
-                  </td>
-                  <td class="center">
-                    <input type="checkbox" checked={champ.played} disabled />
-                  </td>
-                </tr>
-              );
-            })}
-        </tbody>
+        <tbody>{champs.filter(champFilter).map(championRowCreator)}</tbody>
       </table>
     </div>
   );

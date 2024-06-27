@@ -49,6 +49,7 @@ async fn select_champion(client: State<'_, Client>, champion_id: i32) -> Result<
 
 #[tauri::command]
 async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>, &'static str> {
+    println!("Fetching all champions");
     let mastery: HashMap<_, _> = (*client)
         .get_lol_champion_mastery_v1_local_player_champion_mastery()
         .await
