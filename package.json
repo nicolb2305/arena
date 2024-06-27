@@ -10,13 +10,14 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "preact": "^10.16.0",
-    "@tauri-apps/api": "^1"
+    "@tauri-apps/api": "^1",
+    "preact": "^10.16.0"
   },
   "devDependencies": {
+    "@picocss/pico": "^2.0.6",
     "@preact/preset-vite": "^2.5.0",
+    "@tauri-apps/cli": "^1",
     "typescript": "^5.2.2",
-    "vite": "^5.3.1",
-    "@tauri-apps/cli": "^1"
+    "vite": "^5.3.1"
   }
 }
