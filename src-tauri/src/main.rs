@@ -96,7 +96,6 @@ async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>
                 winrate,
                 name: champ.name,
                 mastery,
-                #[allow(clippy::cast_precision_loss)]
                 won: challenges
                     .get(ADAPT_TO_ALL_SITUATIONS)?
                     .completed_ids
@@ -104,7 +103,7 @@ async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>
                 played: challenges.get(CHAMPION_OCEAN)?.completed_ids.contains(&key),
             })
         })
-        .collect::<Vec<_>>())
+        .collect())
 }
 
 fn main() -> anyhow::Result<()> {

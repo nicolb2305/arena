@@ -63,6 +63,7 @@ function App() {
   const [search, setSearch] = useState("");
   const [lastPicked, setLastPicked] = useState(-1);
   const [winrateWeight, setWinrateWeight] = useState(25);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   async function selectChampion(championId: number) {
     setLastPicked(championId);
@@ -78,7 +79,7 @@ function App() {
   // Only fetch champions on first render
   useEffect(() => {
     champion().then((champs) => setChamps(champs));
-  }, []);
+  }, [refreshCounter]);
 
   // If winrateWeight is changed, re-sort by metric if already sorted by metric
   useEffect(() => {
@@ -240,7 +241,7 @@ function App() {
           Pick random
         </button>
         <button
-          onClick={champion}
+          onClick={() => setRefreshCounter(refreshCounter + 1)}
           style="grid-column-start: 2; grid-row-start: 5;"
         >
           Refresh
