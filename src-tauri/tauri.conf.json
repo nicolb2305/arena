@@ -6,8 +6,8 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "League of Legends Arena Tool",
-    "version": "1.0.0"
+    "productName": "arena-tool",
+    "version": "1.0.1"
   },
   "tauri": {
     "allowlist": {

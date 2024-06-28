@@ -1,7 +1,6 @@
 import { useState, useEffect } from "preact/hooks";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./custom.css";
-// import "./pico.css";
 import "@picocss/pico/css/pico.css";
 
 interface ChampionTableRow {

@@ -84,9 +84,9 @@ async fn get_all_data(client: State<'_, Client>) -> Result<Vec<ChampionTableRow>
     Ok(champions
         .into_iter()
         .filter_map(|(_, champ)| {
-            let winrate = *winrates.get(&champ.name)?;
+            let winrate = *winrates.get(&champ.name).unwrap_or(&0.0);
             let key = champ.key.parse::<i32>().unwrap();
-            let mastery = *mastery.get(&key)?;
+            let mastery = *mastery.get(&key).unwrap_or(&0);
             Some(ChampionTableRow {
                 id: key,
                 img: format!(
